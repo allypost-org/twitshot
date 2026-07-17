@@ -17,153 +17,87 @@ export const renderTweetPage: Renderer = async (context, url, logger) => {
 
   await page.waitForLoadState("networkidle");
 
-  if (
-    !(await page.$("data-testid=cellInnerDiv >> nth=0 >> data-testid=tweet"))
-  ) {
-    logger.debug(
-      "Tweet not available, reason:",
-      await page
-        .$("data-testid=cellInnerDiv >> nth=0")
-        .then((el) => el?.innerText()),
-    );
-    return null;
-  }
-
-  const tweet$ = await page.$(
-    "data-testid=cellInnerDiv >> nth=0 >> data-testid=tweet >> ..",
-  );
-
-  if (!tweet$) {
-    logger.warn("Tweet element not found");
+  const tweetId = Number(url.pathname.split("/").at(-1));
+  if (!tweetId || isNaN(tweetId)) {
+    logger.debug("Tweet URL is incorrect");
 
     return null;
   }
 
-  // Remove bottom popups (eg. Accept cookies, sign in, etc.)
-  {
-    const layers$ = await page.$("#layers");
+  const $tweet = page.locator(`main article`);
 
-    await layers$?.evaluate((el) => {
-      el.parentNode?.removeChild(el);
-    });
-  }
-
-  // Remove Follow button and dots
-  {
-    const layers$ = await page.$('[data-testid="User-Name"]');
-
-    if (layers$) {
-      await layers$.evaluate(($username) => {
-        let $node = $username.parentNode;
-        while (
-          $node &&
-          $node !== document.body &&
-          $node.childElementCount === 1
-        ) {
-          $node = $node.parentElement;
-        }
-
-        if (!$node) {
-          return;
-        }
-
-        const $lastChild = $node.lastChild;
-
-        $lastChild?.parentElement?.removeChild($lastChild);
-      });
+  await $tweet.evaluate(($el) => {
+    // Remove the three dots next to the username
+    {
+      $el.querySelector('button[aria-label="More"]')?.remove();
     }
-  }
 
-  // Remove everything below tweet meta (reposts, quotes, likes, etc.)
-  {
-    await tweet$.evaluate(($tweet) => {
-      const $tweetMeta = $tweet.querySelector(
-        '*[role="group"]:has([role="separator"])',
-      );
+    // Set padding only on the tweet itself
+    {
+      $el.style.padding = "1em";
 
-      let $nextElement = $tweetMeta?.nextSibling;
-      while ($nextElement) {
-        let $elementToRemove = $nextElement;
-        $nextElement = $nextElement.nextSibling; // Move to the next sibling
-        $elementToRemove.parentNode?.removeChild($elementToRemove); // Remove the current sibling
+      let $parent = $el.parentElement;
+      while ($parent) {
+        $parent.style.padding = "0px";
+        $parent = $parent.parentElement;
       }
-    });
-  }
-
-  // Check for sensitive content popup
-  {
-    const clicked = await tweet$.evaluate(($tweet) => {
-      const $settingsLink = $tweet.querySelector(
-        'a[href="/settings/content_you_see"]',
-      );
-
-      if (!$settingsLink) {
-        return false;
-      }
-
-      const $sensitiveContentPopup =
-        $settingsLink.parentNode?.parentNode?.parentNode;
-      const $viewBtn =
-        $sensitiveContentPopup?.querySelector<HTMLElement>('[role="button"]');
-
-      $viewBtn?.click();
-
-      return true;
-    });
-
-    if (clicked) {
-      logger.debug("Enabled sensitive content");
-      await page.waitForResponse("https://*.twimg.com/**");
-      await page.waitForLoadState("networkidle");
     }
-  }
 
-  // Add border radius to tweet to make it a bit more fancy
-  {
-    await tweet$.evaluate(($tweet) => {
-      $tweet.style.borderRadius = "12px";
-      $tweet.style.marginBottom = "2px";
-    });
-  }
+    // Remove the "Read $NUM replies" thing
+    {
+      document.querySelector("article > div > button")?.remove();
+    }
 
-  // // Remove "Read $NUM replies" thing
-  {
-    await tweet$.evaluate(($tweet) => {
-      $tweet
-        .querySelector('[data-testid="logged_out_read_replies_pivot"]')
-        ?.remove();
-    });
-  }
+    // Remove cookie consent popup
+    {
+      document.querySelector('[aria-label="Cookie consent"]')?.remove();
+    }
 
-  // Remove share button
-  {
-    await tweet$.evaluate(($tweet) => {
-      const $shareBtn = $tweet.querySelector('[aria-label="Share post"]')
-        ?.parentElement?.parentElement;
-      const $siblings = $shareBtn?.parentElement?.children;
-
-      $shareBtn?.remove();
-
-      if (!$siblings) {
-        return;
-      }
-
-      for (let i = 0; i < $siblings.length; i++) {
-        const $sibling = $siblings.item(i) as HTMLElement;
-        if (!$sibling) {
-          continue;
+    // Remove useless fluff around main
+    {
+      const $main = document.querySelector("main")!;
+      const $children = $main.parentElement?.children ?? [];
+      for (const $child of $children) {
+        if ($child !== $main) {
+          $child.remove();
         }
-
-        $sibling.style.justifyContent = "center";
       }
-    });
-  }
+    }
 
-  await page
-    .$('div[aria-label="Home timeline"] > :nth-child(1)')
-    .then((el$) => el$?.evaluate(($el) => $el.remove()));
+    // Remove useless fluff _inside_ main
+    {
+      const $main = document.querySelector("main")!;
+      const $articleContainer = $main.parentElement!.querySelector(
+        "main > div:has(article)",
+      );
+      const $children = $main?.children ?? [];
+      for (const $child of $children) {
+        if ($child !== $articleContainer) {
+          $child.remove();
+        }
+      }
+    }
 
-  return tweet$.screenshot(SCREENSHOT_CONFIG);
+    // Remove share button
+    {
+      $el.querySelector('[aria-label="Share"]')?.remove();
+    }
+
+    // Center the tweet actions
+    {
+      let $container = $el.querySelector('[aria-label="Reply"]')?.parentElement;
+      while ($container && $container.childElementCount < 3) {
+        $container = $container.parentElement;
+      }
+
+      const children = $container?.children ?? [];
+      for (const $child of children) {
+        ($child as HTMLElement).style.justifyContent = "center";
+      }
+    }
+  });
+
+  return $tweet.screenshot(SCREENSHOT_CONFIG);
 };
 
 export const renderTweetEmbedded: Renderer = async (context, url, logger) => {
