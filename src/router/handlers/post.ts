@@ -6,6 +6,7 @@ import { handleTumblrPost } from "./post/tumblr";
 import { handleBlueskyPost } from "./post/bluesky";
 import { handleActivityPub } from "./post/activityPub";
 import { handleLinkedinPost } from "./post/linkedin";
+import { handleThreadsPost } from "./post/threads";
 
 export const handleScreenshotTweetHome: AppHandler = (_req, res) => {
   res.set("Content-Type", "text/html; charset=utf-8").end(INDEX_HTML);
@@ -82,6 +83,14 @@ export const handleScreenshotTweetProcess: AppHandler = async (req, res) => {
       parsedUrl.protocol = "https:";
 
       return handleLinkedinPost(req, res, parsedUrl);
+    }
+
+    case "threads.com":
+    case "www.threads.com": {
+      parsedUrl.hostname = "www.threads.com";
+      parsedUrl.protocol = "https:";
+
+      return handleThreadsPost(req, res, parsedUrl);
     }
 
     default: {
