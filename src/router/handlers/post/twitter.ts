@@ -32,6 +32,11 @@ export const renderTweetPage: Renderer = async (context, url, logger) => {
       $el.querySelector('button[aria-label="More"]')?.remove();
     }
 
+    // Zoom in page to get bigger and better screenshots
+    {
+      document.body.style.zoom = "2.0";
+    }
+
     // Set padding only on the tweet itself
     {
       $el.style.padding = "1em";
