@@ -24,7 +24,7 @@ export const renderTweetPage: Renderer = async (context, url, logger) => {
     return null;
   }
 
-  const $tweet = page.locator(`main article`);
+  const $tweet = page.locator(`article:has(meta[itemprop="mainEntityOfPage"])`);
 
   await $tweet.evaluate(($el) => {
     // Remove the three dots next to the username
