@@ -9,7 +9,7 @@ const envValidator = z.object({
   APPLICATION_INFO: z
     .string()
     .optional()
-    .default("twitshot <https://github.com/allypost/twitter-screenshotter>"),
+    .default("twitshot <https://github.com/allypost-org/twitshot>"),
   ENABLE_RAW_SCREENSHOTS: z
     .string()
     .optional()
