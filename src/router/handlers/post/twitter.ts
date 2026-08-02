@@ -260,7 +260,9 @@ const BrowserInfo = BrowserDevices["Desktop Chrome"];
 
 export const handleTwitterTweet: RequestHandler = async (req, res, url) => {
   const logger = req.$logger.subTagged("twitter");
-  const tweetUrlMatch = url.pathname.match(/^\/\w{4,15}\/status\/(?<id>\d+)$/);
+  const tweetUrlMatch = url.pathname.match(
+    /^\/(?:\w{4,15}|i)\/status\/(?<id>\d+)$/,
+  );
   if (!tweetUrlMatch) {
     logger.debug("Invalid tweet URL", url.toString());
     return res.sendStatus(StatusCodes.FORBIDDEN);
