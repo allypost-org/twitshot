@@ -24,7 +24,7 @@ export const renderTweetPage: Renderer = async (context, url, logger) => {
     return null;
   }
 
-  const $tweet = page.locator(`article:has(meta[itemprop="mainEntityOfPage"])`);
+  const $tweet = page.locator(`main li:first-child article`);
 
   await $tweet.evaluate(($el) => {
     // Remove the three dots next to the username
@@ -48,11 +48,6 @@ export const renderTweetPage: Renderer = async (context, url, logger) => {
       }
     }
 
-    // Remove the "Read $NUM replies" thing
-    {
-      document.querySelector("article > div > button")?.remove();
-    }
-
     // Remove cookie consent popup
     {
       document.querySelector('[aria-label="Cookie consent"]')?.remove();
@@ -66,6 +61,11 @@ export const renderTweetPage: Renderer = async (context, url, logger) => {
         if ($child !== $main) {
           $child.remove();
         }
+      }
+      for (const $el of document.querySelectorAll("aside")) {
+        try {
+          $el?.remove();
+        } catch {}
       }
     }
 
