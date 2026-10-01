@@ -24,7 +24,7 @@ export const renderTweetPage: Renderer = async (context, url, logger) => {
     return null;
   }
 
-  const $tweet = page.locator(`main li:first-child article:has(meta)`);
+  const $tweet = page.locator("main article").first();
 
   await $tweet.evaluate(($el) => {
     // Remove the three dots next to the username
